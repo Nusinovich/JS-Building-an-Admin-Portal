@@ -1,30 +1,38 @@
 
-const express = require('express')
-const app = express()
-const cors = require('cors')
-const mongoose = require('mongoose')
-const booksController = require('./controller/books_controller')
- 
-//configuration 
-require('dotenv').config()
-const PORT = process.env.PORT
-console.log(PORT)
-app.use(express.json())
-app.use(cors())
-app.use('/books', booksController) 
 
-mongoose.connect(process.env.MONGO_URI, 
-    {useNewUrlParser: true, useUnifiedTopology: true}, () => {
-        console.log('connected to mongoDB: ', process.env.MONGO_URI)
-    })
-// const PORT = 
+async function getBooks() {
+    let response = await fetch("http://localhost:3001/listBooks");
+    let books = await response.json();
 
-app.get('/', (req, res) => {
-    res.send('Books are the best!')
-   })
+    books.forEach(renderBook);
+}
 
- 
+function renderBook(book) {
+    console.log(book);
+    let bookContainer = document.getElementById("box");
+    let bookElement = document.createElement("ul");
+    bookElement.innerHTML = `
+        <li>${book.title}</li>
+        <input value="${book.quantity}">
+        <button id="button-${book.id}" type="submit">Save</button>
+    `;
+    bookContainer.appendChild(bookElement);
 
-app.listen(PORT, () => {
-    console.log('Greetings! From port: ', PORT);
-  })
+    const button = document.getElementById(`button-${book.id}`);
+
+    button.addEventListener("click", async () => {
+        const response = await fetch("http://localhost:3001/updateBook", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: book.id,
+                quantity: bookElement.querySelector("input").value,
+            }),
+        });
+        let updatedBook = await response.json();
+    });
+}
+
+getBooks();
